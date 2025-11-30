@@ -4,31 +4,148 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenAI } from '@google/genai';
 import { FileHandler } from './fileHandler.js';
 import {
   ImageGenerationRequest,
   ImageGenerationResponse,
   AuthConfig,
   StorySequenceArgs,
+  ImageResolution,
 } from './types.js';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
 
+// REST API response types
+interface GeminiPart {
+  text?: string;
+  inlineData?: {
+    mimeType: string;
+    data: string;
+  };
+}
+
+interface GeminiCandidate {
+  content?: {
+    parts?: GeminiPart[];
+  };
+}
+
+interface GeminiResponse {
+  candidates?: GeminiCandidate[];
+  error?: {
+    code: number;
+    message: string;
+    status: string;
+  };
+}
+
 export class ImageGenerator {
-  private ai: GoogleGenAI;
+  private apiKey: string;
   private modelName: string;
   private static readonly DEFAULT_MODEL = 'gemini-2.5-flash-image';
+  private static readonly DEFAULT_RESOLUTION: ImageResolution = '1K';
+  private static readonly API_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   constructor(authConfig: AuthConfig) {
-    this.ai = new GoogleGenAI({
-      apiKey: authConfig.apiKey,
-    });
+    this.apiKey = authConfig.apiKey;
     this.modelName =
       process.env.NANOBANANA_MODEL || ImageGenerator.DEFAULT_MODEL;
     console.error(`DEBUG - Using image model: ${this.modelName}`);
+  }
+
+  /**
+   * Make a REST API call to Gemini
+   */
+  private async callGeminiRestApi(
+    prompt: string,
+    resolution?: ImageResolution,
+    aspectRatio?: string,
+    inputImageBase64?: string,
+    inputImageMimeType?: string,
+  ): Promise<GeminiResponse> {
+    const url = `${ImageGenerator.API_BASE_URL}/${this.modelName}:generateContent?key=${this.apiKey}`;
+
+    // Build parts array
+    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+    parts.push({ text: prompt });
+
+    // Add input image if provided (for editing)
+    if (inputImageBase64 && inputImageMimeType) {
+      parts.push({
+        inlineData: {
+          mimeType: inputImageMimeType,
+          data: inputImageBase64,
+        },
+      });
+    }
+
+    // Build generationConfig based on model
+    // gemini-2.5-flash-image: only supports aspectRatio
+    // gemini-3-pro-image-preview: supports aspectRatio and imageSize (1K/2K/4K)
+    const isGemini3 = this.modelName.includes('gemini-3');
+    
+    interface ImageConfig {
+      aspectRatio?: string;
+      imageSize?: string;
+    }
+    
+    const imageConfig: ImageConfig = {};
+    
+    if (aspectRatio) {
+      imageConfig.aspectRatio = aspectRatio;
+    }
+    
+    // Only add imageSize for Gemini 3 models
+    if (isGemini3 && resolution) {
+      imageConfig.imageSize = resolution;
+    }
+
+    const requestBody = {
+      contents: [
+        {
+          role: 'user',
+          parts,
+        },
+      ],
+      generationConfig: {
+        responseModalities: ['Image'],
+        ...(Object.keys(imageConfig).length > 0 ? { imageConfig } : {}),
+      },
+    };
+
+    console.error('DEBUG - REST API URL:', url.replace(this.apiKey, '[REDACTED]'));
+    console.error('DEBUG - REST API Request Body:', JSON.stringify({
+      ...requestBody,
+      contents: requestBody.contents.map(c => ({
+        ...c,
+        parts: c.parts.map(p => {
+          if ('inlineData' in p) {
+            return { inlineData: { mimeType: p.inlineData.mimeType, data: `[BASE64: ${p.inlineData.data.length} chars]` } };
+          }
+          return p;
+        }),
+      })),
+    }, null, 2));
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(requestBody),
+    });
+
+    const responseData = await response.json() as GeminiResponse;
+
+    if (!response.ok) {
+      console.error('DEBUG - REST API Error Response:', JSON.stringify(responseData, null, 2));
+      throw new Error(responseData.error?.message || `HTTP ${response.status}: ${response.statusText}`);
+    }
+
+    console.error('DEBUG - REST API Response Status:', response.status);
+    return responseData;
   }
 
   private async openImagePreview(filePath: string): Promise<void> {
@@ -256,16 +373,13 @@ export class ImageGenerator {
         );
 
         try {
-          // Make API call for each variation
-          const response = await this.ai.models.generateContent({
-            model: this.modelName,
-            contents: [
-              {
-                role: 'user',
-                parts: [{ text: currentPrompt }],
-              },
-            ],
-          });
+          // Use REST API
+          const resolution = request.resolution || ImageGenerator.DEFAULT_RESOLUTION;
+          const response = await this.callGeminiRestApi(
+            currentPrompt,
+            resolution,
+            request.aspectRatio,
+          );
 
           console.error('DEBUG - API Response structure for variation', i + 1);
 
@@ -443,15 +557,13 @@ export class ImageGenerator {
           console.error(`DEBUG - Generating step ${stepNumber}: ${stepPrompt}`);
   
           try {
-            const response = await this.ai.models.generateContent({
-              model: this.modelName,
-              contents: [
-                {
-                  role: 'user',
-                  parts: [{ text: stepPrompt }],
-                },
-              ],
-            });
+            // Use REST API
+            const resolution = request.resolution || ImageGenerator.DEFAULT_RESOLUTION;
+            const response = await this.callGeminiRestApi(
+              stepPrompt,
+              resolution,
+              request.aspectRatio,
+            );
   
             if (response.candidates && response.candidates[0]?.content?.parts) {
               for (const part of response.candidates[0].content.parts) {
@@ -466,7 +578,7 @@ export class ImageGenerator {
                 if (imageBase64) {
                   const filename = FileHandler.generateFilename(
                     `${type}step${stepNumber}${request.prompt}`,
-                    'png', // Stories default to png
+                    request.fileFormat || 'jpeg', // Stories default to jpg
                     0,
                   );
                   const fullPath = await FileHandler.saveImageFromBase64(
@@ -566,28 +678,21 @@ export class ImageGenerator {
         fileResult.filePath!,
       );
 
-      const response = await this.ai.models.generateContent({
-        model: this.modelName,
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: request.prompt },
-              {
-                inlineData: {
-                  data: imageBase64,
-                  mimeType: 'image/png',
-                },
-              },
-            ],
-          },
-        ],
-      });
+      // Determine mime type from file extension
+      const ext = fileResult.filePath!.toLowerCase().split('.').pop();
+      const mimeType = ext === 'png' ? 'image/png' : 'image/jpeg';
 
-      console.error(
-        'DEBUG - Edit API Response structure:',
-        JSON.stringify(response, null, 2),
+      // Use REST API for editing
+      const resolution = request.resolution || ImageGenerator.DEFAULT_RESOLUTION;
+      const response = await this.callGeminiRestApi(
+        request.prompt,
+        resolution,
+        request.aspectRatio,
+        imageBase64,
+        mimeType,
       );
+
+      console.error('DEBUG - Edit API Response received');
 
       if (response.candidates && response.candidates[0]?.content?.parts) {
         const generatedFiles: string[] = [];
@@ -612,7 +717,7 @@ export class ImageGenerator {
           if (resultImageBase64) {
             const filename = FileHandler.generateFilename(
               `${request.mode}_${request.prompt}`,
-              'png', // Edits default to png
+              request.fileFormat || 'jpeg', // Edits default to jpg
               0,
             );
             const fullPath = await FileHandler.saveImageFromBase64(
@@ -620,7 +725,7 @@ export class ImageGenerator {
               outputPath,
               filename,
             );
-generatedFiles.push(fullPath);
+            generatedFiles.push(fullPath);
             console.error('DEBUG - Edited image saved to:', fullPath);
             imageFound = true;
             break; // Only process the first valid image

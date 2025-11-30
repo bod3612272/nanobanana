@@ -103,6 +103,13 @@ class NanoBananaServer {
                     'Automatically open generated images in default viewer',
                   default: false,
                 },
+                resolution: {
+                  type: 'string',
+                  enum: ['1K', '2K', '4K'],
+                  description:
+                    'Output image resolution (default: 4K)',
+                  default: '4K',
+                },
               },
               required: ['prompt'],
             },
@@ -424,6 +431,7 @@ class NanoBananaServer {
               noPreview:
                 (args?.noPreview as boolean) ||
                 (args?.['no-preview'] as boolean),
+              resolution: (args?.resolution as '1K' | '2K' | '4K') || '4K',
             };
             response =
               await this.imageGenerator.generateTextToImage(imageRequest);
@@ -463,7 +471,7 @@ class NanoBananaServer {
               prompt: this.buildIconPrompt(args),
               outputCount: (args?.sizes as number[])?.length || 1,
               mode: 'generate',
-              fileFormat: (args?.format as 'png' | 'jpeg') || 'png',
+              fileFormat: (args?.format as 'png' | 'jpeg') || 'jpeg',
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||

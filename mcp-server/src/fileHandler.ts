@@ -59,7 +59,7 @@ export class FileHandler {
 
   static generateFilename(
     prompt: string,
-    format: 'png' | 'jpeg' = 'png',
+    format: 'png' | 'jpeg' = 'jpeg',
     index: number = 0,
   ): string {
     // Create user-friendly filename from prompt

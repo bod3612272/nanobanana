@@ -181,6 +181,7 @@ The `/generate` command supports advanced options for creating multiple variatio
 **`--styles="style1,style2"`** - Comma-separated artistic styles
 **`--variations="var1,var2"`** - Specific variation types  
 **`--format=grid|separate`** - Output format (default: separate)
+**`--resolution=1K|2K|4K`** - Output image resolution (default: 4K)
 **`--seed=123`** - Seed for reproducible variations
 **`--preview`** - Automatically open generated images in default viewer
 

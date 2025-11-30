@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+export type ImageResolution = '1K' | '2K' | '4K';
+export type AspectRatio = '1:1' | '2:3' | '3:2' | '3:4' | '4:3' | '4:5' | '5:4' | '9:16' | '16:9' | '21:9';
+
 export interface ImageGenerationRequest {
   prompt: string;
   inputImage?: string;
@@ -15,6 +18,10 @@ export interface ImageGenerationRequest {
   format?: 'grid' | 'separate';
   fileFormat?: 'png' | 'jpeg';
   seed?: number;
+  // Resolution option (only for Gemini 3 models)
+  resolution?: ImageResolution;
+  // Aspect ratio option
+  aspectRatio?: AspectRatio;
   // Preview options
   preview?: boolean;
   noPreview?: boolean;
