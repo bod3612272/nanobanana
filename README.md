@@ -57,7 +57,7 @@ export NANOBANANA_MODEL=gemini-3-pro-image-preview
 Install the extension using the `gemini extensions install` command:
 
 ```bash
-gemini extensions install https://github.com/gemini-cli-extensions/nanobanana
+gemini extensions install https://github.com/doggy8088/nanobanana
 ```
 
 ### 2. Activate
