@@ -197,7 +197,7 @@ class NanoBananaServer {
                   type: 'string',
                   enum: ['png', 'jpeg'],
                   description: 'Output format',
-                  default: 'png',
+                  default: 'jpeg',
                 },
                 background: {
                   type: 'string',

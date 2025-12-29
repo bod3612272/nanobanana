@@ -247,7 +247,7 @@ The `/icon` command specializes in creating app icons, favicons, and UI elements
 **`--sizes="16,32,64"`** - Array of icon sizes in pixels (common: 16, 32, 64, 128, 256, 512, 1024)
 **`--type="app-icon|favicon|ui-element"`** - Icon type (default: app-icon)
 **`--style="flat|skeuomorphic|minimal|modern"`** - Visual style (default: modern)
-**`--format="png|jpeg"`** - Output format (default: png)
+**`--format="png|jpeg"`** - Output format (default: jpeg)
 **`--background="transparent|white|black|color"`** - Background type (default: transparent)
 **`--corners="rounded|sharp"`** - Corner style for app icons (default: rounded)
 
@@ -361,16 +361,16 @@ The `/diagram` command generates professional technical diagrams, flowcharts, an
 
 Images are saved with user-friendly names based on your prompts:
 
-- `"sunset over mountains"` → `sunset_over_mountains.png`
-- `"abstract art piece"` → `abstract_art_piece.png`
+- `"sunset over mountains"` → `sunset_over_mountains.jpg`
+- `"abstract art piece"` → `abstract_art_piece.jpg`
 
 ### Automatic Duplicate Prevention
 
 If a file already exists, a counter is automatically added:
 
-- `sunset_over_mountains.png`
-- `sunset_over_mountains_1.png`
-- `sunset_over_mountains_2.png`
+- `sunset_over_mountains.jpg`
+- `sunset_over_mountains_1.jpg`
+- `sunset_over_mountains_2.jpg`
 
 ### File Search Locations
 
