@@ -61,8 +61,71 @@ export class FileHandler {
     prompt: string,
     format: 'png' | 'jpeg' = 'jpeg',
     index: number = 0,
+    customFilename?: string,
+    forceSuffix: boolean = false,
+    suffixOverride?: string | number,
   ): string {
-    // Create user-friendly filename from prompt
+    if (!customFilename) {
+      const baseName = this.derivePromptBaseName(prompt);
+      const extension = format === 'jpeg' ? 'jpg' : 'png';
+      const outputPath = this.ensureOutputDirectory();
+      let fileName = `${baseName}.${extension}`;
+      let counter = index > 0 ? index : 1;
+
+      while (fs.existsSync(path.join(outputPath, fileName))) {
+        fileName = `${baseName}_${counter}.${extension}`;
+        counter++;
+      }
+
+      return fileName;
+    }
+
+    const outputPath = this.ensureOutputDirectory();
+    const { baseName, extension } = this.parseCustomFilename(
+      customFilename,
+      format,
+    );
+
+    const normalizedSuffix =
+      suffixOverride !== undefined && suffixOverride !== null
+        ? this.sanitizeBaseName(String(suffixOverride))
+        : '';
+
+    if (normalizedSuffix) {
+      let fileName = `${baseName}_${normalizedSuffix}.${extension}`;
+      let collisionCounter = 1;
+
+      while (fs.existsSync(path.join(outputPath, fileName))) {
+        fileName = `${baseName}_${normalizedSuffix}_${collisionCounter}.${extension}`;
+        collisionCounter++;
+      }
+
+      return fileName;
+    }
+
+    const useSuffix = forceSuffix || index > 0;
+    let counter = useSuffix ? (forceSuffix ? index + 1 : index) : 0;
+
+    const buildFileName = (suffixCounter: number) =>
+      suffixCounter > 0
+        ? `${baseName}_${suffixCounter}.${extension}`
+        : `${baseName}.${extension}`;
+
+    let fileName = buildFileName(useSuffix ? counter : 0);
+
+    while (fs.existsSync(path.join(outputPath, fileName))) {
+      if (useSuffix) {
+        counter += 1;
+      } else {
+        counter = counter === 0 ? 1 : counter + 1;
+      }
+      fileName = buildFileName(counter);
+    }
+
+    return fileName;
+  }
+
+  private static derivePromptBaseName(prompt: string): string {
     let baseName = prompt
       .toLowerCase()
       .replace(/[^a-z0-9\s]/g, '') // Remove special characters
@@ -73,19 +136,40 @@ export class FileHandler {
       baseName = 'generated_image';
     }
 
-    const extension = format === 'jpeg' ? 'jpg' : 'png';
+    return baseName;
+  }
 
-    // Check for existing files and add counter if needed
-    const outputPath = this.ensureOutputDirectory();
-    let fileName = `${baseName}.${extension}`;
-    let counter = index > 0 ? index : 1;
+  private static sanitizeBaseName(value: string): string {
+    return value
+      .trim()
+      .replace(/\s+/g, '_')
+      .replace(/[^A-Za-z0-9_-]/g, '');
+  }
 
-    while (fs.existsSync(path.join(outputPath, fileName))) {
-      fileName = `${baseName}_${counter}.${extension}`;
-      counter++;
+  private static parseCustomFilename(
+    filename: string,
+    format: 'png' | 'jpeg',
+  ): { baseName: string; extension: 'jpg' | 'png' } {
+    const trimmed = filename.trim();
+    const basename = path.basename(trimmed);
+    const parsed = path.parse(basename);
+    const rawBase = parsed.name || parsed.base;
+    let baseName = this.sanitizeBaseName(rawBase);
+
+    if (!baseName) {
+      baseName = 'generated_image';
     }
 
-    return fileName;
+    const rawExt = parsed.ext.replace('.', '').toLowerCase();
+    let extension: 'jpg' | 'png' = format === 'jpeg' ? 'jpg' : 'png';
+
+    if (rawExt === 'jpg' || rawExt === 'jpeg') {
+      extension = 'jpg';
+    } else if (rawExt === 'png') {
+      extension = 'png';
+    }
+
+    return { baseName, extension };
   }
 
   static async saveImageFromBase64(

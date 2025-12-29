@@ -361,6 +361,7 @@ export class ImageGenerator {
       const outputPath = FileHandler.ensureOutputDirectory();
       const generatedFiles: string[] = [];
       const prompts = this.buildBatchPrompts(request);
+      const forceSuffix = Boolean(request.filename) && prompts.length > 1;
       let firstError: string | null = null;
 
       console.error(`DEBUG - Generating ${prompts.length} image variation(s)`);
@@ -402,12 +403,19 @@ export class ImageGenerator {
               }
 
               if (imageBase64) {
+                const filenameSuffix =
+                  request.filename && request.filenameSuffixes?.[i] !== undefined
+                    ? request.filenameSuffixes[i]
+                    : undefined;
                 const filename = FileHandler.generateFilename(
                   request.styles || request.variations
                     ? currentPrompt
                     : request.prompt,
                   request.fileFormat,
                   i,
+                  request.filename,
+                  forceSuffix,
+                  filenameSuffix,
                 );
                 const fullPath = await FileHandler.saveImageFromBase64(
                   imageBase64,
@@ -524,6 +532,7 @@ export class ImageGenerator {
         const type = args?.type || 'story';
         const style = args?.style || 'consistent';
         const transition = args?.transition || 'smooth';
+        const forceSuffix = Boolean(request.filename) && steps > 1;
         let firstError: string | null = null;
   
         console.error(`DEBUG - Generating ${steps}-step ${type} sequence`);
@@ -576,10 +585,13 @@ export class ImageGenerator {
                 }
   
                 if (imageBase64) {
+                  const filenameIndex = request.filename ? i : 0;
                   const filename = FileHandler.generateFilename(
                     `${type}step${stepNumber}${request.prompt}`,
                     request.fileFormat || 'jpeg', // Stories default to jpg
-                    0,
+                    filenameIndex,
+                    request.filename,
+                    forceSuffix,
                   );
                   const fullPath = await FileHandler.saveImageFromBase64(
                     imageBase64,
@@ -719,6 +731,7 @@ export class ImageGenerator {
               `${request.mode}_${request.prompt}`,
               request.fileFormat || 'jpeg', // Edits default to jpg
               0,
+              request.filename,
             );
             const fullPath = await FileHandler.saveImageFromBase64(
               resultImageBase64,

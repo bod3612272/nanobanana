@@ -66,6 +66,11 @@ class NanoBananaServer {
                   description:
                     'The text prompt describing the image to generate',
                 },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename. When generating multiple images, suffixes are added automatically.',
+                },
                 outputCount: {
                   type: 'number',
                   description:
@@ -128,6 +133,11 @@ class NanoBananaServer {
                   type: 'string',
                   description: 'The filename of the input image to edit',
                 },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename for the edited image',
+                },
                 preview: {
                   type: 'boolean',
                   description:
@@ -153,6 +163,11 @@ class NanoBananaServer {
                   type: 'string',
                   description: 'The filename of the input image to restore',
                 },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename for the restored image',
+                },
                 preview: {
                   type: 'boolean',
                   description:
@@ -174,6 +189,11 @@ class NanoBananaServer {
                   type: 'string',
                   description:
                     'Description of the icon or UI element to generate',
+                },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename. When generating multiple images, suffixes are added automatically.',
                 },
                 sizes: {
                   type: 'array',
@@ -233,6 +253,11 @@ class NanoBananaServer {
                   description:
                     'Description of the pattern or texture to generate',
                 },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename for the generated pattern',
+                },
                 size: {
                   type: 'string',
                   description: 'Pattern tile size (e.g., "256x256", "512x512")',
@@ -289,6 +314,11 @@ class NanoBananaServer {
                   type: 'string',
                   description:
                     'Description of the story or process to visualize',
+                },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename. When generating multiple images, suffixes are added automatically.',
                 },
                 steps: {
                   type: 'number',
@@ -348,6 +378,11 @@ class NanoBananaServer {
                   type: 'string',
                   description:
                     'Description of the diagram content and structure',
+                },
+                filename: {
+                  type: 'string',
+                  description:
+                    'Optional output filename for the generated diagram',
                 },
                 type: {
                   type: 'string',
@@ -427,6 +462,7 @@ class NanoBananaServer {
               variations: args?.variations as string[],
               format: (args?.format as 'grid' | 'separate') || 'separate',
               seed: args?.seed as number,
+              filename: args?.filename as string,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||
@@ -443,6 +479,7 @@ class NanoBananaServer {
               prompt: args?.prompt as string,
               inputImage: args?.file as string,
               mode: 'edit',
+              filename: args?.filename as string,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||
@@ -457,6 +494,7 @@ class NanoBananaServer {
               prompt: args?.prompt as string,
               inputImage: args?.file as string,
               mode: 'restore',
+              filename: args?.filename as string,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||
@@ -467,11 +505,18 @@ class NanoBananaServer {
           }
 
           case 'generate_icon': {
+            const iconSizes = args?.sizes as number[] | undefined;
+            const iconFilenameSuffixes =
+              args?.filename && iconSizes?.length
+                ? iconSizes.map((size) => String(size))
+                : undefined;
             const iconRequest: ImageGenerationRequest = {
               prompt: this.buildIconPrompt(args),
-              outputCount: (args?.sizes as number[])?.length || 1,
+              outputCount: iconSizes?.length || 1,
               mode: 'generate',
               fileFormat: (args?.format as 'png' | 'jpeg') || 'jpeg',
+              filename: args?.filename as string,
+              filenameSuffixes: iconFilenameSuffixes,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||
@@ -483,10 +528,14 @@ class NanoBananaServer {
           }
 
           case 'generate_pattern': {
+            const patternSize = args?.size as string | undefined;
             const patternRequest: ImageGenerationRequest = {
               prompt: this.buildPatternPrompt(args),
               outputCount: 1,
               mode: 'generate',
+              filename: args?.filename as string,
+              filenameSuffixes:
+                args?.filename && patternSize ? [patternSize] : undefined,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||
@@ -503,6 +552,7 @@ class NanoBananaServer {
               outputCount: (args?.steps as number) || 4,
               mode: 'generate',
               variations: ['sequence-step'],
+              filename: args?.filename as string,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||
@@ -520,6 +570,7 @@ class NanoBananaServer {
               prompt: this.buildDiagramPrompt(args),
               outputCount: 1,
               mode: 'generate',
+              filename: args?.filename as string,
               preview: args?.preview as boolean,
               noPreview:
                 (args?.noPreview as boolean) ||

@@ -25,6 +25,9 @@ export interface ImageGenerationRequest {
   // Preview options
   preview?: boolean;
   noPreview?: boolean;
+  // Output filename override
+  filename?: string;
+  filenameSuffixes?: string[];
 }
 
 export interface ImageGenerationResponse {

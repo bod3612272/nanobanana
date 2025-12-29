@@ -52,7 +52,7 @@ jobs:
       # and updates the gemini-extension.json file with the new version.
       - name: Update extension version
         run: |
-          VERSION=$(echo ${{ github.ref_name }} | sed 's/v//')
+          VERSION=$(echo ${{ github.ref_name }} | sed 's/^v//' | sed 's/-4k$//')
           sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" gemini-extension.json
 
       # 7. Create TAR archive with MCP server dependencies
@@ -72,5 +72,4 @@ jobs:
           gh release create ${{ github.ref_name }} \
              --generate-notes \
              --title "Release ${{ github.ref_name }}" \
-             --notes "See the changelog for details." \
              nanobanana-release.tar.gz

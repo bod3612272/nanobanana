@@ -13,6 +13,7 @@
 - **✏️ 圖片編修**：用自然語言指令修改既有圖片
 - **🔧 圖片修復**：修復並強化老舊或受損照片
 - **📁 智慧檔案管理**：以友善檔名儲存，並自動避免重複檔名
+- **🏷️ 自訂輸出檔名**：支援 `--filename` 指定檔名，多張輸出自動加後綴
 
 ## 📋 前置需求
 
@@ -86,6 +87,9 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 # 多張變體（含預覽）
 /generate "群山日落" --count=3 --preview
 
+# 指定輸出檔名（多張自動加後綴）
+/generate "群山日落" --count=3 --filename="sunset_mountains"
+
 # 風格變體
 /generate "山景風光" --styles="watercolor,oil-painting" --count=4
 
@@ -97,6 +101,7 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 
 ```bash
 /edit my_photo.png "幫人物加上太陽眼鏡"
+/edit my_photo.png "幫人物加上太陽眼鏡" --filename="with_sunglasses"
 /edit portrait.jpg "把背景改成海灘" --preview
 ```
 
@@ -181,6 +186,7 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 **`--format=grid|separate`** - 輸出格式（預設：separate）
 **`--resolution=1K|2K|4K`** - 輸出解析度（預設：4K）
 **`--seed=123`** - 用於重現結果的隨機種子
+**`--filename="name"`** - 指定輸出檔名（多張自動加後綴）
 **`--preview`** - 自動使用預設檢視器開啟生成圖片
 
 ### 可用風格
@@ -248,6 +254,7 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 **`--format="png|jpeg"`** - 輸出格式（預設：jpeg）
 **`--background="transparent|white|black|color"`** - 背景類型（預設：transparent）
 **`--corners="rounded|sharp"`** - App 圖示圓角樣式（預設：rounded）
+**`--filename="name"`** - 指定輸出檔名（搭配 `--sizes` 時，後綴使用尺寸）
 
 ### 圖示範例
 
@@ -274,6 +281,7 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 **`--density="sparse|medium|dense"`** - 元素密度（預設：medium）
 **`--colors="mono|duotone|colorful"`** - 配色方案（預設：colorful）
 **`--repeat="tile|mirror"`** - 無縫拼接方式（預設：tile）
+**`--filename="name"`** - 指定輸出檔名（搭配 `--size` 時，後綴使用尺寸）
 
 ### 圖樣範例
 
@@ -300,6 +308,7 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 **`--layout="separate|grid|comic"`** - 輸出排版（預設：separate）
 **`--transition="smooth|dramatic|fade"`** - 步驟間轉場風格（預設：smooth）
 **`--format="storyboard|individual"`** - 輸出格式（預設：individual）
+**`--filename="name"`** - 指定輸出檔名（多張自動加後綴）
 
 ### 故事範例
 
@@ -326,6 +335,7 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 **`--complexity="simple|detailed|comprehensive"`** - 細節程度（預設：detailed）
 **`--colors="mono|accent|categorical"`** - 配色方案（預設：accent）
 **`--annotations="minimal|detailed"`** - 標註與註解程度（預設：detailed）
+**`--filename="name"`** - 指定輸出檔名
 
 ### 圖表類型與使用情境
 
@@ -361,6 +371,13 @@ gemini extensions install https://github.com/doggy8088/nanobanana
 
 - `"sunset over mountains"` → `sunset_over_mountains.jpg`
 - `"abstract art piece"` → `abstract_art_piece.jpg`
+
+### 自訂檔名
+
+使用 `--filename="name"` 可指定輸出檔名：
+
+- 單張：`/generate "山景" --filename="mountain_view"` → `mountain_view.jpg`
+- 多張：`/generate "山景" --count=3 --filename="mountain_view"` → `mountain_view_1.jpg`, `mountain_view_2.jpg`, `mountain_view_3.jpg`
 
 ### 自動避免重複檔名
 
