@@ -31,6 +31,12 @@ jobs:
           node-version: '20' # Specify the Node.js version you use
           cache: 'npm'
 
+      # 2.5. Sets up Bun for MCP server build
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: '1.1.42'
+
       # 3. Installs root dependencies
       # We use 'npm ci' which is faster and safer for CI/CD environments
       - name: Install root dependencies
